@@ -1,55 +1,93 @@
-function generatePassword(){
+const lengthInput = document.getElementById("length");
+const lengthValue = document.getElementById("lengthValue");
+const passwordField = document.getElementById("password");
+const strengthBar = document.getElementById("strengthBar");
+const strengthLabel = document.getElementById("strengthLabel");
 
-let length=document.getElementById("length").value;
+const charsets = {
+  uppercase: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+  lowercase: "abcdefghijklmnopqrstuvwxyz",
+  numbers: "0123456789",
+  symbols: "!@#$%^&*()_+{}[]<>?/",
+};
 
-if(length<4){
+lengthInput.addEventListener("input", () => {
+  lengthValue.textContent = lengthInput.value;
+});
 
-alert("Password length must be at least 4");
+document.getElementById("generateBtn").addEventListener("click", generatePassword);
+document.getElementById("copyBtn").addEventListener("click", copyPassword);
 
-return;
+function generatePassword() {
+  const length = parseInt(lengthInput.value, 10);
+  const selected = ["uppercase", "lowercase", "numbers", "symbols"]
+    .filter((key) => document.getElementById(key).checked);
 
+  if (selected.length === 0) {
+    alert("Select at least one character type.");
+    return;
+  }
+
+  // Guarantee at least one character from each selected set
+  let password = selected.map((key) => randomChar(charsets[key]));
+
+  const allChars = selected.map((key) => charsets[key]).join("");
+  for (let i = password.length; i < length; i++) {
+    password.push(randomChar(allChars));
+  }
+
+  password = shuffle(password).slice(0, length).join("");
+  passwordField.value = password;
+  updateStrength(password, selected.length);
 }
 
-const lowercase="abcdefghijklmnopqrstuvwxyz";
-
-const uppercase="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
-const numbers="0123456789";
-
-const symbols="!@#$%^&*()_+{}[]<>?/";
-
-const all=lowercase+uppercase+numbers+symbols;
-
-let password="";
-
-password+=lowercase[Math.floor(Math.random()*lowercase.length)];
-
-password+=uppercase[Math.floor(Math.random()*uppercase.length)];
-
-password+=numbers[Math.floor(Math.random()*numbers.length)];
-
-password+=symbols[Math.floor(Math.random()*symbols.length)];
-
-for(let i=4;i<length;i++){
-
-password+=all[Math.floor(Math.random()*all.length)];
-
+function randomChar(charset) {
+  return charset[Math.floor(Math.random() * charset.length)];
 }
 
-password=password.split('').sort(()=>0.5-Math.random()).join('');
-
-document.getElementById("password").value=password;
-
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
 }
 
-function copyPassword(){
+function updateStrength(password, varietyCount) {
+  const length = password.length;
+  let score = 0;
 
-let pass=document.getElementById("password");
+  if (length >= 8) score++;
+  if (length >= 12) score++;
+  if (length >= 16) score++;
+  if (varietyCount >= 3) score++;
 
-pass.select();
+  const levels = [
+    { label: "Weak", color: "var(--weak)", width: "25%" },
+    { label: "Fair", color: "var(--weak)", width: "40%" },
+    { label: "Good", color: "var(--medium)", width: "65%" },
+    { label: "Strong", color: "var(--strong)", width: "85%" },
+    { label: "Very Strong", color: "var(--strong)", width: "100%" },
+  ];
 
-navigator.clipboard.writeText(pass.value);
-
-alert("Password Copied!");
-
+  const level = levels[Math.min(score, levels.length - 1)];
+  strengthBar.style.width = level.width;
+  strengthBar.style.background = level.color;
+  strengthLabel.textContent = `Strength: ${level.label}`;
 }
+
+function copyPassword() {
+  if (!passwordField.value) {
+    alert("Generate a password first.");
+    return;
+  }
+  navigator.clipboard.writeText(passwordField.value).then(() => {
+    const btn = document.getElementById("copyBtn");
+    const original = btn.textContent;
+    btn.textContent = "✅";
+    setTimeout(() => (btn.textContent = original), 1200);
+  });
+}
+
+// Generate one on page load for a nice first impression
+window.addEventListener("DOMContentLoaded", generatePassword);
